@@ -18,7 +18,7 @@ def load_data(img_path):
 	img = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
 
 
-	img_shape=img.shape
+	h,w,c=img.shape
 	scale=(0.08,1.0)
 	ratio=(3./4.,4./3.)
 	
@@ -34,7 +34,6 @@ def load_data(img_path):
 	size_file=np.load(size_path)
   
 
-	print(np.transpose(offset_file,[1,2,0])[np.where(hmap_file==1)],"offset pre")
 
 	height,width,_=img.shape
 	area=width*height
@@ -47,10 +46,14 @@ def load_data(img_path):
 		log_ratio = (math.log(ratio[0]), math.log(ratio[1]))
 		aspect_ratio = math.exp(random.uniform(*log_ratio))
 
-		w=min(int(round(math.sqrt(target_area*aspect_ratio))),800)
-		h=min(int(round(math.sqrt(target_area/aspect_ratio))),800)
+		w=min(int(round(math.sqrt(target_area*aspect_ratio))),w)
+		h=min(int(round(math.sqrt(target_area/aspect_ratio))),h)
+
+		w=min(w,799)
+		h=min(h,799)
 
 		# if 0 < w <= width and 0 < h <= height:
+		print(height-h,height,h)
 		j=np.random.randint(0,height-h)
 		i=np.random.randint(0,width-w)
 		random_param=(i,j,h,w)
@@ -82,7 +85,7 @@ def load_data(img_path):
 	img=_img
 	offset = offset_file[:,j:j+h,i:i+w]
 	size_img = size_file[:,j:j+h,i:i+w]
-	print(_scale,width)
+
 	offset[0, :, :] = offset[0, :, :]*(800//(_scale*width))
 	offset[1, :, :] = offset[1, :, :]*(800//(_scale*height))
 
@@ -98,29 +101,11 @@ def load_data(img_path):
 	hmap_img = cv2.resize(hmap_img.astype(np.float32),(200,200),cv2.INTER_NEAREST)
 	offset = cv2.resize(offset,(200,200),cv2.INTER_NEAREST)
 	size_img = cv2.resize(size_img,(200,200),cv2.INTER_NEAREST)
-	offset_old = copy.deepcopy(offset)
-	size_img_old = copy.deepcopy(size_img)
-	c0,c1 = np.where(hmap_img == 1)
 
-	# print(offset_old.shape)
 
-	for x,y in zip(c0,c1):
-		neigbors=[[x-1,y] if hmap_img[x-1,y] else None,[x,y-1] if hmap_img[x,y-1] else None,[x+1,y] if hmap_img[x+1,y] else None,[x,y+1] if hmap_img[x,y+1] else None]
-		for n in neigbors:
-			if n is not None:
-				# print(neigbors[-1])
-				val=offset_old[n[0],n[1]]
-				size_val=size_img_old[n[0],n[1]] #same coordinates for size
-				break
-		# print(val.shape)
-		if(offset[x,y,0]==0 or offset[x,y,1]==0):
-			offset[x,y,0]=val[0]
-			offset[x,y,1]=val[1]
 
-			size_img[x,y,0]=size_val[0]
-			size_img[x,y,1]=size_val[1]
 
-	print(offset_old[c0,c1])
+
 
 
 
@@ -145,7 +130,7 @@ def load_data(img_path):
 	# cv2.waitKey(0)
 	# cv2.destroyAllWindows()
 # 
-	return np.array(img).shape,hmap_img.shape,offset.shape,size_img.shape
+	return np.array(img),hmap_img,offset,size_img
 
 
 #     image_shape=img.shape
